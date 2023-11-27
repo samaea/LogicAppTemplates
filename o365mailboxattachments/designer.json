@@ -1,0 +1,93 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition": {
+                "actions": {
+                    "HTTP": {
+                        "inputs": {
+                            "body": "@base64ToBinary(triggerBody().attachments[0]?['contentBytes'])",
+                            "headers": {
+                                "Content-Type": "@triggerBody().attachments[0].contenttype",
+                                "x-ms-blob-type": "BlockBlob"
+                            },
+                            "method": "PUT",
+                            "uri": "https://blobtriggerdp.blob.core.windows.net/container2/_@{triggerBody().attachments[0].name}?sv=2022-11-02&ss=bfqt&srt=ZZZZ&sp=XXXX&se=2024-01-09T20:29:40Z&st=2023-10-23T11:29:40Z&spr=https&sig=YYYYYYYY"
+                        },
+                        "runAfter": {
+                            "Upload_blob_to_storage_container": [
+                                "SUCCEEDED"
+                            ]
+                        },
+                        "runtimeConfiguration": {
+                            "contentTransfer": {
+                                "transferMode": "Chunked"
+                            }
+                        },
+                        "type": "Http"
+                    },
+                    "Upload_blob_to_storage_container": {
+                        "inputs": {
+                            "parameters": {
+                                "blobName": "@{triggerBody().attachments[0].name}",
+                                "containerName": "container2",
+                                "content": "@base64ToBinary(triggerBody().attachments[0]?['contentBytes'])",
+                                "overrideIfExists": "true"
+                            },
+                            "serviceProviderConfiguration": {
+                                "connectionName": "AzureBlob",
+                                "operationId": "uploadBlob",
+                                "serviceProviderId": "/serviceProviders/AzureBlob"
+                            }
+                        },
+                        "type": "ServiceProvider"
+                    }
+                },
+                "else": {
+                    "actions": {}
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@triggerBody()?['hasAttachments']",
+                                true
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "If"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_new_email_arrives_in_a_shared_mailbox_(V2)": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "office365-2"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v2/SharedMailbox/Mail/OnNewEmail",
+                    "queries": {
+                        "folderId": "Inbox",
+                        "hasAttachments": false,
+                        "importance": "Any",
+                        "includeAttachments": true,
+                        "mailboxAddress": "sharedmailbox@contoso.onmicrosoft.com"
+                    }
+                },
+                "recurrence": {
+                    "frequency": "Minute",
+                    "interval": 3
+                },
+                "splitOn": "@triggerBody()?['value']",
+                "type": "ApiConnection"
+            }
+        }
+    },
+    "kind": "Stateful"
+}
