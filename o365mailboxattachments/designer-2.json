@@ -1,0 +1,59 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each": {
+                "actions": {
+                    "Upload_blob_to_storage_container": {
+                        "inputs": {
+                            "parameters": {
+                                "blobName": "@items('For_each')?['name']",
+                                "containerName": "containerBlob",
+                                "content": "@base64ToBinary(items('For_each')?['contentBytes'])",
+                                "overrideIfExists": "true"
+                            },
+                            "serviceProviderConfiguration": {
+                                "connectionName": "AzureBlob",
+                                "operationId": "uploadBlob",
+                                "serviceProviderId": "/serviceProviders/AzureBlob"
+                            }
+                        },
+                        "type": "ServiceProvider"
+                    }
+                },
+                "foreach": "@triggerBody()?['attachments']",
+                "runAfter": {},
+                "type": "foreach"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_new_email_arrives_in_a_shared_mailbox_(V2)": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "office365-2"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v2/SharedMailbox/Mail/OnNewEmail",
+                    "queries": {
+                        "folderId": "Inbox",
+                        "hasAttachments": false,
+                        "importance": "Any",
+                        "includeAttachments": true,
+                        "mailboxAddress": "sharedmailbox@contoso.onmicrosoft.com"
+                    }
+                },
+                "recurrence": {
+                    "frequency": "Minute",
+                    "interval": 3
+                },
+                "splitOn": "@triggerBody()?['value']",
+                "type": "ApiConnection"
+            }
+        }
+    },
+    "kind": "Stateful"
+}
